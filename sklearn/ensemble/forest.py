@@ -106,8 +106,9 @@ def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
         indices = np.array(indices)
         sample_counts = np.bincount(indices, minlength=n_samples)
         curr_sample_weight *= sample_counts
-        # print forest.f
-        tree.fit(X, y, sample_weight=curr_sample_weight, check_input=False, f=forest.f)
+        # print curr_sample_weight
+        # print sample_counts
+        tree.fit(X, y, sample_weight=curr_sample_weight, check_input=False)
         tree.indices_ = sample_counts > 0.
 
     elif forest.bootstrap:
