@@ -40,6 +40,7 @@ Single and multi-output problems are both handled.
 # License: BSD 3 clause
 
 from __future__ import division
+from collections import defaultdict
 
 import numpy as np
 
@@ -77,7 +78,39 @@ def _parallel_build_trees(tree, forest, X, y, sample_weight, tree_idx, n_trees,
     if verbose > 1:
         print("building tree %d of %d" % (tree_idx + 1, n_trees))
 
-    if forest.bootstrap:
+    stratified_down_sampling = True
+
+    if stratified_down_sampling:
+                ### me me me
+        n_samples = X.shape[0]
+        if sample_weight is None:
+            curr_sample_weight = np.ones((n_samples,), dtype=np.float64)
+        else:
+            curr_sample_weight = sample_weight.copy()
+
+        random_state = check_random_state(tree.random_state)
+        bc = np.bincount(y.flatten().astype(int))
+        len_min_class = np.min(bc)
+
+        d = defaultdict(list)
+        indices = []
+
+        for i, val in enumerate(y.flatten().astype(int)):
+            d[val].append(i)
+
+        for c, indexes in d.iteritems():
+            indices.extend(random_state.choice(indexes, len_min_class, replace=True))
+
+        np.random.shuffle(indices)
+
+        indices = np.array(indices)
+        sample_counts = np.bincount(indices, minlength=n_samples)
+        curr_sample_weight *= sample_counts
+        # print forest.f
+        tree.fit(X, y, sample_weight=curr_sample_weight, check_input=False, f=forest.f)
+        tree.indices_ = sample_counts > 0.
+
+    elif forest.bootstrap:
         n_samples = X.shape[0]
         if sample_weight is None:
             curr_sample_weight = np.ones((n_samples,), dtype=np.float64)
